@@ -56,13 +56,15 @@ st.set_page_config(
     initial_sidebar_state="auto",
     menu_items=None,
 )
-st.session_state.rag_title = "naive RAG"
+
 has_rag_title = "rag_title" in st.session_state.keys() and st.session_state.rag_title != ""
 
-if has_rag_title:
-    st.title(f'{st.session_state.rag_title}')
+if not has_rag_title:
+    st.session_state.rag_title = "naive RAG"
 else:
-    st.title("naive RAG")
+    st.session_state.rag_title = st.session_state.rag_title
+
+st.title(f'{st.session_state.rag_title}')
 
 if has_rag_title:
     if "messages" not in st.session_state.keys():

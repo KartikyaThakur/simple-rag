@@ -10,9 +10,14 @@ from core.ingestion import ingest_and_upload_to_pinecone
 
 st.title("Configure your RAG app")
 # st.write("What do you want to name your RAG app?")
-if "rag_title" not in st.session_state.keys():
-    rag_title_input = st.text_input("RAG Title", key="rag_title")
+
+has_rag_title = "rag_title" in st.session_state.keys() and st.session_state.rag_title != ""
+
+if not has_rag_title:
+    st.session_state.rag_title = "naive RAG"
+    rag_title_input = st.text_input("RAG Title", key="rag_title", value=st.session_state.rag_title)
 else:
+    st.session_state.rag_title = st.session_state.rag_title
     rag_title_input = st.text_input("RAG Title", key="rag_title", value=st.session_state.rag_title)
 
 if st.button("Set title for your app", type="primary"):
