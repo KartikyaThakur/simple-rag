@@ -6,14 +6,21 @@ name = "pypi"
 [packages]
 requests = "*"
 beautifulsoup4 = "*"
-llama-index = "*"
+llama-index = "0.10.0"
+llama-index-core = "*"
 openai = "*"
 python-dotenv = "*"
 pinecone-client = "*"
 black = "*"
-setuptools = "*"
 streamlit = "*"
 watchdog = "*"
+setuptools = "*"
+chromadb = "*"
+llama-index-vector-stores-pinecone = "*"
+llama-index-llms-openai = "*"
+llama-index-embeddings-openai = "*"
+llama-index-readers-file = "*"
+llmsherpa = "*"
 
 [dev-packages]
 
