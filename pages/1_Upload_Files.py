@@ -11,18 +11,20 @@ from core.ingestion import ingest_and_upload_to_pinecone
 st.title("Configure your RAG app")
 # st.write("What do you want to name your RAG app?")
 
-has_rag_title = "rag_title" in st.session_state.keys() and st.session_state.rag_title != ""
+if not "rag_title" in st.session_state.keys():
+    st.session_state.rag_title = "Simple RAG"
 
-if not has_rag_title:
-    st.session_state.rag_title = "naive RAG"
-    rag_title_input = st.text_input("RAG Title", key="rag_title", value=st.session_state.rag_title)
-else:
-    st.session_state.rag_title = st.session_state.rag_title
-    rag_title_input = st.text_input("RAG Title", key="rag_title", value=st.session_state.rag_title)
+# has_rag_title = st.session_state.rag_title != "Simple RAG"
 
-if st.button("Set title for your app", type="primary"):
-    if "rag_title" not in st.session_state.keys():
-        st.session_state.rag_title = rag_title_input
+# if not has_rag_title:
+#     st.session_state.rag_title = "Simple RAG"
+#     rag_title_input = st.text_input("Set a title for your RAG app", key="rag_title", value="Simple RAG")
+# else:
+#     st.session_state.rag_title = st.session_state.rag_title
+#     rag_title_input = st.text_input("Set a title for your RAG app", key="rag_title", value="Simple RAG")
+# if not has_rag_title and st.button("Save App Title", type="primary"):
+#     if "rag_title" not in st.session_state.keys():
+#         st.session_state.rag_title = rag_title_input
 
 st.write("Upload files, to be used as context")
 uploaded_file = st.file_uploader("Choose a file")
@@ -54,7 +56,7 @@ if uploaded_file is not None:
     # If the hash of the file is not in the import log file, add it
     with open(import_log_filepath, "r") as f:
         import_log = f.read()
-    if str(hash(bytes_data)) not in import_log:
+    if True: #str(hash(bytes_data)) not in import_log:
         with st.spinner('Wait for it...'):
             load_dotenv()
             api_key=os.environ.get("PINECONE_API_KEY")
@@ -65,5 +67,7 @@ if uploaded_file is not None:
         with open(import_log_filepath, "a") as f:
             f.write(str(hash(bytes_data)) + "\n")
             st.write("✅ File uploaded successfully ⬆️")
+        st.page_link("0_Home.py", label= "Back to the app", icon="⚡️")
     else:
         st.write("⚠️ File already uploaded ⚠️")
+

@@ -40,7 +40,7 @@ if "chat_engine" not in st.session_state.keys():
     postprocessor = SentenceEmbeddingOptimizer(
         embed_model=service_context.embed_model,
         percentile_cutoff=0.5,
-        threshold_cutoff=0.7,
+        threshold_cutoff=0.72,
     )
 
     st.session_state.chat_engine = index.as_chat_engine(
@@ -50,7 +50,7 @@ if "chat_engine" not in st.session_state.keys():
     )
 
 st.set_page_config(
-    page_title="naive RAG",
+    page_title="Simple RAG",
     page_icon="📚",
     layout="centered",
     initial_sidebar_state="auto",
@@ -60,11 +60,16 @@ st.set_page_config(
 has_rag_title = "rag_title" in st.session_state.keys() and st.session_state.rag_title != ""
 
 if not has_rag_title:
-    st.session_state.rag_title = "naive RAG"
+    st.session_state.rag_title = "Simple RAG"
 else:
     st.session_state.rag_title = st.session_state.rag_title
 
 st.title(f'{st.session_state.rag_title}')
+
+if has_rag_title:
+    cite_nodes = st.toggle('Cite Nodes')
+else:
+    cite_nodes = False
 
 if has_rag_title:
     if "messages" not in st.session_state.keys():
@@ -93,17 +98,19 @@ if has_rag_title:
                         st.write("Sorry, I don't know the answer to that question.")
                     else:
                         st.write(response.response)
-                        for col, node, i in zip(st.columns(len(nodes)), nodes, range(len(nodes))):
-                            with col:
-                                st.header(f"Source node {i+1}: score={node.score}")
-                                st.write(node.text)
+                        if cite_nodes:
+                            for col, node, i in zip(st.columns(len(nodes)), nodes, range(len(nodes))):
+                                with col:
+                                    st.header(f"Source node {i+1}: score={node.score}")
+                                    st.write(node.text)
                     message = {"role": "assistant", "content": response.response}
                     st.session_state.messages.append(message)
                 except ValueError:
                     st.write("Sorry, I don't know the answer to that question.")
 else:
     with st.chat_message("assistant"):
-        st.write("Hi. I'm here to help you... but right now I'm like Jon Snow.")
+        st.write("I'm like Jon Snow,")
+        st.write("I know nothing. 🤷🏽‍♂️")
+        st.page_link("pages/1_Upload_Files.py", label= "Upload Files to Provide Context 📚", icon="⬆️")
         st.image("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcmNwajl2NzYyOXQ5bWo3eG5ldGs0MmZncjQ1OGxsdXh0Zmhyc2Z2YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ZxAlfNwFZIA6I/giphy.gif")
-        st.write("I know nothing. Please provide me with a title and some context.")
 

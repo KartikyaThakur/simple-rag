@@ -7,7 +7,6 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core import download_loader, ServiceContext, VectorStoreIndex, StorageContext
 from llama_index.vector_stores.pinecone import PineconeVectorStore
-# from llama_hub.smart_pdf_loader import SmartPDFLoader
 from pinecone import Pinecone
 from llama_index.readers.file import PDFReader
 
@@ -17,12 +16,6 @@ def ingest_and_upload_to_pinecone(filepath: str, index_name: str, api_key: str, 
         environment=environment,
     )
 
-# load_dotenv()
-# pc = Pinecone(
-#     api_key=os.environ.get("PINECONE_API_KEY_AWS"),
-#     environment=os.environ.get("PINECONE_ENVIRONMENT_AWS"),
-# )
-# if __name__ == "__main__":
     yield f"\n🎬 Ingestion started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
     yield "\n🟡 Loading UnstructuredReader..."
@@ -42,7 +35,6 @@ def ingest_and_upload_to_pinecone(filepath: str, index_name: str, api_key: str, 
     )
 
     yield "\n🟡 Initializing vector store..."
-    # index_name = os.environ.get("PINECONE_INDEX_NAME_AWS")
     pinecone_index = pc.Index(index_name)
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
@@ -55,4 +47,4 @@ def ingest_and_upload_to_pinecone(filepath: str, index_name: str, api_key: str, 
         show_progress=True,
     )
 
-    yield f"\n⬆️ Ingestion completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    yield f"\n✅ Ingestion completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"

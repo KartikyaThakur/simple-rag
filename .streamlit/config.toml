@@ -1,0 +1,11 @@
+[theme]
+backgroundColor="#35155D"
+secondaryBackgroundColor="#512B81"
+primaryColor="#4477CE"
+textColor="#8CABFF"
+base="dark"
+
+# backgroundColor="#35155D"
+# secondaryBackgroundColor="#512B81"
+# primaryColor="#4477CE"
+# textColor="#8CABFF"

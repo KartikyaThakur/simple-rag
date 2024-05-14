@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.title("About this app")
-st.write("This is a primitive app to demonstrate how you can leverage llamaindex to create a RAG app.")
+st.write("This is a primitive app that demonstrates RAG capabilities..")
 
 st.write("Made with ❤️ using Streamlit, from your friends at Phyniks.")
 # embed image from the web
