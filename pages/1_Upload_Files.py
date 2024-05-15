@@ -6,6 +6,7 @@ import pandas as pd
 from io import StringIO
 
 from core.ingestion import ingest_and_upload_to_pinecone
+from helpers.filename_log_helper import FilenameLogHelper
 
 
 st.title("Configure your RAG app")
@@ -28,6 +29,7 @@ if not "rag_title" in st.session_state.keys():
 
 st.write("Upload files, to be used as context")
 uploaded_file = st.file_uploader("Choose a file")
+
 if uploaded_file is not None:
     # To read file as bytes:
     bytes_data = uploaded_file.getvalue()
@@ -46,17 +48,13 @@ if uploaded_file is not None:
         "hash": hash(bytes_data)
     }
 
-    import_log_filepath = "uploads/import.log"
+    filename_log_helper = FilenameLogHelper()
+    filenames = filename_log_helper.read_all().split("\n")
 
-    # If import.log does not exist, create it
-    if not os.path.exists(import_log_filepath):
-        with open(import_log_filepath, "w") as f:
-            f.write("")
+    print(filenames)
+    print(uploaded_file.name)
 
-    # If the hash of the file is not in the import log file, add it
-    with open(import_log_filepath, "r") as f:
-        import_log = f.read()
-    if True: #str(hash(bytes_data)) not in import_log:
+    if (uploaded_file.name not in filenames):
         with st.spinner('Wait for it...'):
             load_dotenv()
             api_key=os.environ.get("PINECONE_API_KEY")
@@ -64,9 +62,11 @@ if uploaded_file is not None:
             index_name = os.environ.get("PINECONE_INDEX_NAME")
             for status in ingest_and_upload_to_pinecone(uploaded_file_path, index_name, api_key, environment):
                 st.write(status)
-        with open(import_log_filepath, "a") as f:
-            f.write(str(hash(bytes_data)) + "\n")
-            st.write("✅ File uploaded successfully ⬆️")
+
+        # Add the filename to the filename log file
+        filename_log_helper.write(uploaded_file.name)
+
+        st.write("✅ File uploaded successfully ⬆️")
         st.page_link("0_Home.py", label= "Back to the app", icon="⚡️")
     else:
         st.write("⚠️ File already uploaded ⚠️")

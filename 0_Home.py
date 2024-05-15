@@ -4,6 +4,7 @@ import os
 from core.node_postprocessors.duplicate_postprocessing import (
     DuplicateRemoverNodePostprocessor,
 )
+from helpers.filename_log_helper import FilenameLogHelper
 
 load_dotenv()
 import streamlit as st
@@ -11,6 +12,7 @@ from pinecone import Pinecone
 from llama_index.core import VectorStoreIndex, ServiceContext
 from llama_index.core.chat_engine.types import ChatMode
 from llama_index.vector_stores.pinecone import PineconeVectorStore
+from llama_index.core.vector_stores import ( MetadataFilters, MetadataFilter )
 from llama_index.core.callbacks import LlamaDebugHandler, CallbackManager
 from llama_index.core.postprocessor import SentenceEmbeddingOptimizer
 
@@ -18,6 +20,24 @@ llama_debug = LlamaDebugHandler(print_trace_on_end=True)
 callback_manager = CallbackManager(handlers=[llama_debug])
 service_context = ServiceContext.from_defaults(callback_manager=callback_manager)
 
+# Add option for user to choose context
+filenames = FilenameLogHelper().read_all().split("\n")
+# Add an empty option to the list of filenames
+filenames.insert(0, "-- No context selected --")
+
+st.set_page_config(
+    page_title="Simple RAG",
+    page_icon="📚",
+    layout="centered",
+    initial_sidebar_state="auto",
+    menu_items=None,
+)
+
+context_filename = st.selectbox("Choose a context", filenames)
+
+if context_filename == "-- No context selected --":
+    st.write("Select a context file to continue.")
+    st.stop()
 
 @st.cache_resource(show_spinner=False)
 def get_index() -> VectorStoreIndex:
@@ -36,26 +56,22 @@ def get_index() -> VectorStoreIndex:
 
 index = get_index()
 
+print(index.summary)
+
 if "chat_engine" not in st.session_state.keys():
     postprocessor = SentenceEmbeddingOptimizer(
         embed_model=service_context.embed_model,
         percentile_cutoff=0.5,
         threshold_cutoff=0.72,
     )
+    filters = MetadataFilters (filters=[MetadataFilter(key="file_name", value=f"uploads/{context_filename}")])
 
     st.session_state.chat_engine = index.as_chat_engine(
         chat_mode=ChatMode.CONTEXT,
         verbose=True,
+        filters=filters,
         node_postprocessors=[postprocessor, DuplicateRemoverNodePostprocessor()],
     )
-
-st.set_page_config(
-    page_title="Simple RAG",
-    page_icon="📚",
-    layout="centered",
-    initial_sidebar_state="auto",
-    menu_items=None,
-)
 
 has_rag_title = "rag_title" in st.session_state.keys() and st.session_state.rag_title != ""
 
