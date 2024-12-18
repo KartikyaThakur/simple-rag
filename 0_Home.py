@@ -87,46 +87,42 @@ if has_rag_title:
 else:
     cite_nodes = False
 
-if has_rag_title:
-    if "messages" not in st.session_state.keys():
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": f"Hi. I'm here to help you. Ask away!",
-            }
-        ]
+if "messages" not in st.session_state.keys():
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": f"Hi. I'm here to help you. Ask away!",
+        }
+    ]
 
-    if prompt := st.chat_input("Your question"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
+if prompt := st.chat_input("Your question"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                try:
-                    response = st.session_state.chat_engine.chat(message=prompt)
-                    nodes = [node for node in response.source_nodes]
-                    # if there are no nodes, we can't show anything
-                    if len(nodes) == 0:
-                        st.write("Sorry, I don't know the answer to that question.")
-                    else:
-                        st.write(response.response)
-                        if cite_nodes:
-                            for col, node, i in zip(st.columns(len(nodes)), nodes, range(len(nodes))):
-                                with col:
-                                    st.header(f"Source node {i+1}: score={node.score}")
-                                    st.write(node.text)
-                    message = {"role": "assistant", "content": response.response}
-                    st.session_state.messages.append(message)
-                except ValueError:
-                    st.write("Sorry, I don't know the answer to that question.")
-else:
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
-        st.write("I'm like Jon Snow,")
-        st.write("I know nothing. 🤷🏽‍♂️")
-        st.page_link("pages/1_Upload_Files.py", label= "Upload Files to Provide Context 📚", icon="⬆️")
-        st.image("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcmNwajl2NzYyOXQ5bWo3eG5ldGs0MmZncjQ1OGxsdXh0Zmhyc2Z2YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ZxAlfNwFZIA6I/giphy.gif")
+        with st.spinner("Thinking..."):
+            try:
+                response = st.session_state.chat_engine.chat(message=prompt)
+                nodes = [node for node in response.source_nodes]
+                # if there are no nodes, we can't show anything
+                if len(nodes) < 2:
+                    st.write("Sorry, I don't know the answer to that question.")
+                # if the nodes have a score of less than 0.5, we can't show anything
+                elif all(node.score < 0.5 for node in nodes):
+                    st.write("Sorry, I don't know the answer to that question.")
+                else:
+                    st.write(response.response)
+                    if cite_nodes:
+                        for col, node, i in zip(st.columns(len(nodes)), nodes, range(len(nodes))):
+                            with col:
+                                st.header(f"Source node {i+1}: score={node.score}")
+                                st.write(node.text)
+                message = {"role": "assistant", "content": response.response}
+                st.session_state.messages.append(message)
+            except ValueError:
+                st.write("Sorry, I don't know the answer to that question.")
 
