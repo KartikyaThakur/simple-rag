@@ -23,21 +23,44 @@ def extract_text_from_pdf_with_images(filepath: str):
         # Extract text from page
         text += page.extract_text() or ""
 
-        # Extract images from page
-        if hasattr(page, "images") and page.images:
-            for image_index, image in enumerate(page.images):
-                try:
-                    with open(f"temp_image_{image_index}.png", "wb") as f:
-                        f.write(image.data)
-                    image_text = pytesseract.image_to_string(Image.open(f"temp_image_{image_index}.png"))
-                    text += "\n" + image_text
-                except Exception as e:
-                    logging.error(f"Error extracting text from image: {e}")
-                finally:
-                    # Clean up temporary image file
-                    if os.path.exists(f"temp_image_{image_index}.png"):
-                        os.remove(f"temp_image_{image_index}.png")
+        try:
+            # Extract images from page
+            if hasattr(page, "images") and page.images:
+                for image_index, image in enumerate(page.images):
+                    try:
+                        # Save image data to a temporary file
+                        with open(f"temp_image_{image_index}.png", "wb") as f:
+                            f.write(image.data)
+
+                        # Validate image file and convert if necessary
+                        img = Image.open(f"temp_image_{image_index}.png")
+                        img.verify()  # Check if the image is valid
+                        img = Image.open(f"temp_image_{image_index}.png")  # Reopen for processing
+                        if img.mode != "RGB":
+                            img = img.convert("RGB")
+
+                        # Extract text using pytesseract
+                        image_text = pytesseract.image_to_string(img)
+                        text += "\n" + image_text
+
+                    except (IOError, ValueError) as e:
+                        logging.error(f"Error processing image data: {e}")
+                    except Exception as e:
+                        logging.error(f"Unexpected error during image processing: {e}")
+                    finally:
+                        # Clean up temporary image file
+                        if os.path.exists(f"temp_image_{image_index}.png"):
+                            os.remove(f"temp_image_{image_index}.png")
+        except Exception as e:
+            logging.log(f"page.images: {page.images}")
+            logging.error(f"Error processing page images: {e}")
+        finally:
+            # Clean up temporary image files
+            for i in range(image_index):
+                if os.path.exists(f"temp_image_{i}.png"):
+                    os.remove(f"temp_image_{i}.png")
     return text
+
 
 def ingest_and_upload_to_pinecone(filepath: str, index_name: str, api_key: str, environment: str):
     # Initialize logging
@@ -71,7 +94,7 @@ def ingest_and_upload_to_pinecone(filepath: str, index_name: str, api_key: str, 
 
         # Convert nodes back to documents
         documents = [
-            Document(text=node.get_text(), extra_info={"node_id": node.node_id})
+            Document(text=node.get_text(), extra_info={"node_id": node.node_id, "source": filepath})  # Include metadata
             for node in nodes
         ]
         logging.info("Nodes converted back to documents successfully.")

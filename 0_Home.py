@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import logging
 
 from core.node_postprocessors.duplicate_postprocessing import (
     DuplicateRemoverNodePostprocessor,
@@ -19,25 +20,15 @@ from llama_index.core.postprocessor import SentenceEmbeddingOptimizer
 llama_debug = LlamaDebugHandler(print_trace_on_end=True)
 callback_manager = CallbackManager(handlers=[llama_debug])
 service_context = ServiceContext.from_defaults(callback_manager=callback_manager)
-
-# Add option for user to choose context
-filenames = FilenameLogHelper().read_all().split("\n")
-# Add an empty option to the list of filenames
-filenames.insert(0, "-- No context selected --")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 st.set_page_config(
-    page_title="Simple RAG",
+    page_title="CtrlF Demo",
     page_icon="📚",
     layout="centered",
     initial_sidebar_state="auto",
     menu_items=None,
 )
-
-context_filename = st.selectbox("Choose a context", filenames)
-
-if context_filename == "-- No context selected --":
-    st.write("Select a context file to continue.")
-    st.stop()
 
 @st.cache_resource(show_spinner=False)
 def get_index() -> VectorStoreIndex:
@@ -64,19 +55,19 @@ if "chat_engine" not in st.session_state.keys():
         percentile_cutoff=0.5,
         threshold_cutoff=0.72,
     )
-    filters = MetadataFilters (filters=[MetadataFilter(key="file_name", value=f"uploads/{context_filename}")])
+    # filters = MetadataFilters (filters=[MetadataFilter(key="file_name", value=f"uploads/{context_filename}")])
 
     st.session_state.chat_engine = index.as_chat_engine(
         chat_mode=ChatMode.CONTEXT,
         verbose=True,
-        filters=filters,
+        # filters=filters,
         node_postprocessors=[postprocessor, DuplicateRemoverNodePostprocessor()],
     )
 
 has_rag_title = "rag_title" in st.session_state.keys() and st.session_state.rag_title != ""
 
 if not has_rag_title:
-    st.session_state.rag_title = "Simple RAG"
+    st.session_state.rag_title = "CtrlF Demo"
 else:
     st.session_state.rag_title = st.session_state.rag_title
 
@@ -110,19 +101,26 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                 nodes = [node for node in response.source_nodes]
                 # if there are no nodes, we can't show anything
                 if len(nodes) < 2:
-                    st.write("Sorry, I don't know the answer to that question.")
+                    st.write("Sorry, I couldn't find that in my information base.")
                 # if the nodes have a score of less than 0.5, we can't show anything
                 elif all(node.score < 0.5 for node in nodes):
-                    st.write("Sorry, I don't know the answer to that question.")
+                    st.write("Sorry, I couldn't find that in my information base.")
                 else:
                     st.write(response.response)
+                    # if cite_nodes:
+                    #     for col, node, i in zip(st.columns(len(nodes)), nodes, range(len(nodes))):
+                    #         with col:
+                    #             st.header(f"Source node {i+1}: score={node.score}")
+                    #             st.write(node.text)
                     if cite_nodes:
                         for col, node, i in zip(st.columns(len(nodes)), nodes, range(len(nodes))):
                             with col:
-                                st.header(f"Source node {i+1}: score={node.score}")
-                                st.write(node.text)
+                                logging.info(f"Metadata: {node.metadata}")
+                                title = node.metadata.get("source", "Unknown Title")
+                                st.header(f"Source {i+1}: {title} (score={node.score:.2f})")
+                                st.write(node.text[:200] + "...")  # Truncate long texts
                 message = {"role": "assistant", "content": response.response}
                 st.session_state.messages.append(message)
             except ValueError:
-                st.write("Sorry, I don't know the answer to that question.")
+                st.write("Sorry, I couldn't find that in my information base.")
 
